@@ -1,7 +1,7 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const userController = require('../controller/user.controller.js');
-const authMiddleware = require('../middleware/authMiddleware.js')
+const userController = require("../controller/user.controller.js");
+const authMiddleware = require("../middleware/authMiddleware.js");
 
 /**
  * @swagger
@@ -49,7 +49,10 @@ const authMiddleware = require('../middleware/authMiddleware.js')
  *                    example: Internal server error
  */
 
-
-router.get('/getprofile', authMiddleware.authenticateToken , userController.getprofile);
+router.get(
+  "/getprofile",
+  authMiddleware.authenticateToken,
+  userController.getprofile
+);
 
 module.exports = router;

@@ -1,7 +1,6 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const logsController = require('../controller/logs.controller.js');
-
+const logsController = require("../controller/logs.controller.js");
 
 /**
  * @swagger
@@ -9,7 +8,7 @@ const logsController = require('../controller/logs.controller.js');
  *   get:
  *     tags:
  *     - Logs - user
- *     summary: Get Logs 
+ *     summary: Get Logs
  *     description: Retrieve a list of all Logs
  *     security:
  *       - Authorization: []
@@ -76,8 +75,7 @@ const logsController = require('../controller/logs.controller.js');
  *                   example: "Internal server error"
  */
 
-
-router.get('/', logsController.getlogs);
+router.get("/", logsController.getlogs);
 
 /**
  * @swagger
@@ -85,7 +83,7 @@ router.get('/', logsController.getlogs);
  *   get:
  *     tags:
  *     - Logs - user
- *     summary: Get loginlogs 
+ *     summary: Get loginlogs
  *     description: Retrieve a list of login logs
  *     parameters:
  *       - in: query
@@ -150,8 +148,7 @@ router.get('/', logsController.getlogs);
  *                   example: "Internal server error"
  */
 
-
-router.get('/loginlogs', logsController.loginlogs);
+router.get("/loginlogs", logsController.loginlogs);
 
 /**
  * @swagger
@@ -159,7 +156,7 @@ router.get('/loginlogs', logsController.loginlogs);
  *   get:
  *     tags:
  *     - Logs - user
- *     summary: Get adduserlogs 
+ *     summary: Get adduserlogs
  *     description: Retrieve a list of adduser logs
  *     parameters:
  *       - in: query
@@ -224,8 +221,7 @@ router.get('/loginlogs', logsController.loginlogs);
  *                   example: "Internal server error"
  */
 
-
-router.get('/adduserlogs', logsController.adduserlogs);
+router.get("/adduserlogs", logsController.adduserlogs);
 
 /**
  * @swagger
@@ -298,8 +294,7 @@ router.get('/adduserlogs', logsController.adduserlogs);
  *                   example: "Internal server error"
  */
 
-
-router.get('/updateuserlogs', logsController.updateuserlogs);
+router.get("/updateuserlogs", logsController.updateuserlogs);
 
 /**
  * @swagger
@@ -372,8 +367,7 @@ router.get('/updateuserlogs', logsController.updateuserlogs);
  *                   example: "Internal server error"
  */
 
-
-router.get('/deactivatelogs', logsController.deactivatelogs);
+router.get("/deactivatelogs", logsController.deactivatelogs);
 
 /**
  * @swagger
@@ -381,7 +375,7 @@ router.get('/deactivatelogs', logsController.deactivatelogs);
  *   get:
  *     tags:
  *     - Logs - room
- *     summary: Get addroomlogs 
+ *     summary: Get addroomlogs
  *     description: Retrieve a list of addroom logs
  *     parameters:
  *       - in: query
@@ -446,8 +440,7 @@ router.get('/deactivatelogs', logsController.deactivatelogs);
  *                   example: "Internal server error"
  */
 
-
-router.get('/addroomlogs', logsController.addroomlogs);
+router.get("/addroomlogs", logsController.addroomlogs);
 
 /**
  * @swagger
@@ -455,7 +448,7 @@ router.get('/addroomlogs', logsController.addroomlogs);
  *   get:
  *     tags:
  *     - Logs - room
- *     summary: Get updateroomlogs 
+ *     summary: Get updateroomlogs
  *     description: Retrieve a list of updateroom logs
  *     parameters:
  *       - in: query
@@ -520,8 +513,7 @@ router.get('/addroomlogs', logsController.addroomlogs);
  *                   example: "Internal server error"
  */
 
-
-router.get('/updateroomlogs', logsController.updateroomlogs);
+router.get("/updateroomlogs", logsController.updateroomlogs);
 
 /**
  * @swagger
@@ -529,7 +521,7 @@ router.get('/updateroomlogs', logsController.updateroomlogs);
  *   get:
  *     tags:
  *     - Logs - room
- *     summary: Get adduserlogs 
+ *     summary: Get adduserlogs
  *     description: Retrieve a list of adduser logs
  *     parameters:
  *       - in: query
@@ -594,7 +586,6 @@ router.get('/updateroomlogs', logsController.updateroomlogs);
  *                   example: "Internal server error"
  */
 
-
-router.get('/deleteroomlogs', logsController.deleteroomlogs);
+router.get("/deleteroomlogs", logsController.deleteroomlogs);
 
 module.exports = router;

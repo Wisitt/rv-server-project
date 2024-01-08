@@ -1,5 +1,4 @@
 const client = require("../configs/database.js");
-const jwt = require("jsonwebtoken");
 const { logging } = require("../middleware/loggingMiddleware.js");
 const fs = require("fs");
 

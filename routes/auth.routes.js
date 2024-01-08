@@ -1,6 +1,6 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const authController = require('../controller/auth.controller.js');
+const authController = require("../controller/auth.controller.js");
 
 /**
  * @swagger
@@ -64,6 +64,6 @@ const authController = require('../controller/auth.controller.js');
  *                    type: string
  *                    example: Internal server error
  */
-router.post('/login', authController.login);
+router.post("/login", authController.login);
 
 module.exports = router;
