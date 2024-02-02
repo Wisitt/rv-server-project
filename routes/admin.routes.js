@@ -3,6 +3,8 @@ const router = express.Router();
 const adminController = require("../controller/admin.controller.js");
 const authMiddleware = require("../middleware/authMiddleware.js");
 const roomController = require("../controller/room.controller.js");
+const reportController = require('../controller/report.controller.js')
+const uploadMiddleware = require('../middleware/uploadMiddleware.js')
 
 /**
  * @swagger
@@ -36,7 +38,7 @@ const roomController = require("../controller/room.controller.js");
  *               account_type:
  *                 type: string
  *                 example: "student"
- *               user_img_path:
+ *               image:
  *                 type: string
  *                 format: binary   # Specify the format as binary for file uploads
  *             required:
@@ -98,7 +100,7 @@ const roomController = require("../controller/room.controller.js");
  *                    example: Internal server error
  */
 
-router.post("/user/add", authMiddleware.isAdmin, adminController.adduser);
+router.post("/user/add", authMiddleware.isAdmin, uploadMiddleware.uploadToS3, uploadMiddleware.handleS3Upload, adminController.adduser,);
 
 /**
  * @swagger
@@ -189,11 +191,7 @@ router.post("/user/add", authMiddleware.isAdmin, adminController.adduser);
  *                    example: Internal server error
  */
 
-router.get(
-  "/user/getalluser",
-  authMiddleware.isAdmin,
-  adminController.getallusers
-);
+router.get("/user/getalluser", authMiddleware.isAdmin, adminController.getallusers);
 
 /**
  * @swagger
@@ -273,11 +271,7 @@ router.get(
  *                    example: Internal server error
  */
 
-router.get(
-  "/user/getuser/:id",
-  authMiddleware.isAdmin,
-  adminController.getUserById
-);
+router.get("/user/getuser/:id", authMiddleware.isAdmin, adminController.getUserById);
 
 /**
  * @swagger
@@ -349,11 +343,7 @@ router.get(
  *                    example: Internal server error
  */
 
-router.delete(
-  "/user/deactivateUser/:id",
-  authMiddleware.isAdmin,
-  adminController.deactivateUser
-);
+router.delete("/user/deactivateUser/:id", authMiddleware.isAdmin, adminController.deactivateUser);
 
 /**
  * @swagger
@@ -387,7 +377,7 @@ router.delete(
  *                 type: string
  *               lastname:
  *                 type: string
- *               user_img_path:
+ *               image:
  *                 type: string
  *                 format: binary   # Specify the format as binary for file uploads
  *             required:
@@ -448,11 +438,7 @@ router.delete(
  *                    example: Internal server error
  */
 
-router.patch(
-  "/user/updateuser/:id",
-  authMiddleware.isAdmin,
-  adminController.updateUser
-);
+router.patch("/user/updateuser/:id", authMiddleware.isAdmin, uploadMiddleware.uploadToS3, uploadMiddleware.handleS3Upload, adminController.updateUser);
 
 /**
  * @swagger
@@ -710,11 +696,7 @@ router.post("/room/add", authMiddleware.isAdmin, roomController.addroom);
  *                    example: Internal server error
  */
 
-router.get(
-  "/room/getallroom",
-  authMiddleware.isAdmin,
-  roomController.getallroom
-);
+router.get("/room/getallroom", authMiddleware.isAdmin, roomController.getallroom);
 
 /**
  * @swagger
@@ -794,11 +776,7 @@ router.get(
  *                    example: Internal server error
  */
 
-router.get(
-  "/room/getroom/:room_id",
-  authMiddleware.isAdmin,
-  roomController.getroomById
-);
+router.get("/room/getroom/:room_id", authMiddleware.isAdmin, roomController.getroomById);
 
 /**
  * @swagger
@@ -903,11 +881,7 @@ router.get(
  *                    example: Internal server error
  */
 
-router.patch(
-  "/room/updateroom/:room_id",
-  authMiddleware.isAdmin,
-  roomController.updateroom
-);
+router.patch("/room/updateroom/:room_id", authMiddleware.isAdmin, roomController.updateroom);
 
 /**
  * @swagger
@@ -979,10 +953,1347 @@ router.patch(
  *                    example: Internal server error
  */
 
-router.delete(
-  "/room/deleteroom/:room_id",
-  authMiddleware.isAdmin,
-  roomController.deleteroom
-);
+router.delete("/room/deleteroom/:room_id", authMiddleware.isAdmin, roomController.deleteroom);
 
+/**
+ * @swagger
+ * /admin/getreport:
+ *   get:
+ *     tags:
+ *     - Admin - report
+ *     summary: Get users Profile (authentication required)
+ *     description: Retrieve a profile of users (authentication required).
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         description: Page number (default is 1)
+ *         schema:
+ *           type: integer
+ *           example: 1
+ *       - in: query
+ *         name: pageSize
+ *         required: false
+ *         description: Number of items per page (default is 10)
+ *         schema:
+ *           type: integer
+ *           example: 10
+ *     responses:
+ *       200:
+ *         description: authenticate successful. Returns the users profile.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  report_id:
+ *                    type: string
+ *                    example: "1"
+ *                  room_number:
+ *                    type: string
+ *                    example: "9901"
+ *                  fullname:
+ *                    type: string
+ *                    example: "User User"
+ *                  report_detail:
+ *                    type: string
+ *                    example: "NULL"
+ *                  report_status:
+ *                    type: string
+ *                    example: "1"
+ *                  timestamp:
+ *                    type: string
+ *                    example: "2024-01-09T01:39:40.260Z"
+ *       401:
+ *         description: No token provided, Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: No token provided, Invalid token
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Internal server error
+ */
+
+
+router.get('/getreport', authMiddleware.isAdmin , reportController.getallreports);
+
+/**
+ * @swagger
+ * /admin/updatereportstatus/{report_id}:
+ *   patch:
+ *     tags:
+ *     - Admin - report
+ *     summary: Edit user information (authentication required).
+ *     description: Edit user information.
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: report_id
+ *         required: true
+ *         description: User ID to fetch
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               report_status:
+ *                 type: string
+ *                 example: "0"
+ *             required:
+ *               - report_status
+ *     responses:
+ *       200:
+ *         description: report Edit successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: report Edit successfully
+ *       401:
+ *         description: No token provided/Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: No token provided/Invalid token
+ *       403:
+ *         description: You don't have permission to access this resource.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: You don't have permission to access this resource.
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: User not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Internal server error
+ */
+
+router.patch("/updatereportstatus/:report_id", authMiddleware.isAdmin, reportController.updatereportstatus);
+
+// /**
+//  * @swagger
+//  * /admin/uploads:
+//  *   post:
+//  *     tags:
+//  *     - TEST
+//  *     summary: Register a new user (authentication required).
+//  *     description: Create a new user account by providing user information and an image file.
+//  *     requestBody:
+//  *       required: true
+//  *       content:
+//  *         multipart/form-data:
+//  *           schema:
+//  *             type: object
+//  *             properties:
+//  *               image:
+//  *                 type: string
+//  *                 format: binary   # Specify the format as binary for file uploads
+//  *     responses:
+//  *       201:
+//  *         description: User registration successful.
+//  *         content:
+//  *           application/json:
+//  *             schema:
+//  *               type: object
+//  *               properties:
+//  *                  message:
+//  *                    type: string
+//  *                    example: User registration successful.
+//  *       400:
+//  *         description: Bad request (e.g., missing or invalid input data)
+//  *         content:
+//  *           application/json:
+//  *             schema:
+//  *               type: object
+//  *               properties:
+//  *                  message:
+//  *                    type: string
+//  *                    example: Bad request (e.g., missing or invalid input data)
+//  *       401:
+//  *         description: No token provided/Invalid token
+//  *         content:
+//  *           application/json:
+//  *             schema:
+//  *               type: object
+//  *               properties:
+//  *                  message:
+//  *                    type: string
+//  *                    example: No token provided/Invalid token
+//  *       403:
+//  *         description: You don't have permission to access this resource.
+//  *         content:
+//  *           application/json:
+//  *             schema:
+//  *               type: object
+//  *               properties:
+//  *                  message:
+//  *                    type: string
+//  *                    example: You don't have permission to access this resource.
+//  *       500:
+//  *         description: Internal server error
+//  *         content:
+//  *           application/json:
+//  *             schema:
+//  *               type: object
+//  *               properties:
+//  *                  message:
+//  *                    type: string
+//  *                    example: Internal server error
+//  */
+
+// router.post('/uploads', authMiddleware.isAdmin, uploadMiddleware.uploadToS3, uploadMiddleware.handleS3Upload, (req, res) => {res.json({ imageUrl: req.uploadedFileUrl });});
+
+/**
+ * @swagger
+ * /admin/subject/addsubject:
+ *   post:
+ *     tags:
+ *     - Admin - subject
+ *     summary: Create a new subject (authentication required).
+ *     description: Create a new subject by providing subject information.
+ *     security:
+ *       - Authorization: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               subject_name:
+ *                 type: string
+ *                 example: "Math"
+ *               subject_code:
+ *                 type: string
+ *                 example: "ST212224236"
+ *               user_id:
+ *                 type: string
+ *                 example: "1"
+ *             required:
+ *               - subject_name
+ *               - subject_code
+ *     responses:
+ *       201:
+ *         description: Room additional successful.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Room additional successful.
+ *       400:
+ *         description: Bad request (e.g., missing or invalid input data)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Bad request (e.g., missing or invalid input data)
+ *       401:
+ *         description: No token provided/Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: No token provided/Invalid token
+ *       403:
+ *         description: You don't have permission to access this resource.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: You don't have permission to access this resource.
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Internal server error
+ */
+
+router.post("/subject/addsubject", authMiddleware.isAdmin, adminController.addsubject);
+
+/**
+ * @swagger
+ * /admin/subject/getallsubject:
+ *   get:
+ *     tags:
+ *     - Admin - subject
+ *     summary: Get all subject (authentication required)
+ *     description: Retrieve a list of all subjects (authentication required).
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *           minimum: 1
+ *           description: The page number to retrieve
+ *       - in: query
+ *         name: pageSize
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           minimum: 1
+ *           maximum: 100
+ *           description: Number of items per page
+ *     responses:
+ *       200:
+ *         description: authenticate successful. Returns the list of users.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  subject_id:
+ *                    type: string
+ *                    example: 1
+ *                  subject_name:
+ *                    type: string
+ *                    example: "Mathematics"
+ *                  subject_code:
+ *                    type: string
+ *                    example: "MATH101"
+ *                  user_id:
+ *                    type: string
+ *                    example: "123"
+ *       401:
+ *         description: No token provided/Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: No token provided/Invalid token
+ *       403:
+ *         description: You don't have permission to access this resource.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: You don't have permission to access this resource.
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Internal server error
+ */
+
+router.get("/subject/getallsubject", authMiddleware.isAdmin, adminController.getallsubject);
+
+/**
+ * @swagger
+ * /admin/subject/getbyid/{subject_id}:
+ *   get:
+ *     tags:
+ *     - Admin - subject
+ *     summary: Get subject by subject_id (authentication required)
+ *     description: Retrieve subject details by subject_id (authentication required).
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: subject_id
+ *         required: true
+ *         description: Subject ID to fetch
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successful. Returns the subject details.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  subject_id:
+ *                    type: string
+ *                    example: 1
+ *                  subject_name:
+ *                    type: string
+ *                    example: "Mathematics"
+ *                  subject_code:
+ *                    type: string
+ *                    example: "MATH101"
+ *                  user_id:
+ *                    type: string
+ *                    example: "123"
+ *       401:
+ *         description: No token provided/Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: No token provided/Invalid token
+ *       404:
+ *         description: Subject not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Subject not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Internal server error
+ */
+
+router.get("/subject/getbyid/:subject_id", authMiddleware.isAdmin, adminController.getSubjectById);
+
+/**
+ * @swagger
+ * /admin/subject/deletesubject/{subject_id}:
+ *   delete:
+ *     tags:
+ *     - Admin - subject
+ *     summary: Delete subject (authentication required).
+ *     description: Delete subject .
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: subject_id
+ *         required: true
+ *         description: Subject ID to fetch
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Room Delete successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Room Delete successfully
+ *       401:
+ *         description: No token provided/Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: No token provided/Invalid token
+ *       403:
+ *         description: You don't have permission to access this resource.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: You don't have permission to access this resource.
+ *       404:
+ *         description: Subject not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Subject not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Internal server error
+ */
+
+router.delete("/subject/deletesubject/:subject_id", authMiddleware.isAdmin, adminController.deleteSubjectById);
+
+/**
+ * @swagger
+ * /admin/room/getroomlevel/{roomlevel_id}:
+ *   get:
+ *     tags:
+ *     - Admin - RoomGET
+ *     summary: Get roomlevel by roomlevel_id (authentication required)
+ *     description: Retrieve roomlevel details by roomlevel_id (authentication required).
+ *     security:
+ *       - Authorization: []
+ *     responses:
+ *       200:
+ *         description: Successful. Returns the roomlevel details.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  roomlevel_id:
+ *                    type: string
+ *                    example: 1
+ *                  roomlevel_name:
+ *                    type: string
+ *                    example: "Mathematics"
+ *                  roomlevel_code:
+ *                    type: string
+ *                    example: "MATH101"
+ *                  user_id:
+ *                    type: string
+ *                    example: "123"
+ *       401:
+ *         description: No token provided/Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: No token provided/Invalid token
+ *       404:
+ *         description: Roomlevel not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Roomlevel not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Internal server error
+ */
+
+router.get("/room/getroomlevel/:roomlevel_id", authMiddleware.isAdmin, roomController.getroomlevel);
+
+/**
+ * @swagger
+ * /admin/room/getroomnumber/{roomnumber_id}:
+ *   get:
+ *     tags:
+ *     - Admin - RoomGET
+ *     summary: Get roomnumber by roomnumber_id (authentication required)
+ *     description: Retrieve roomnumber details by roomnumber_id (authentication required).
+ *     security:
+ *       - Authorization: []
+ *     responses:
+ *       200:
+ *         description: Successful. Returns the roomnumber details.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  roomnumber_id:
+ *                    type: string
+ *                    example: 1
+ *       401:
+ *         description: No token provided/Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: No token provided/Invalid token
+ *       404:
+ *         description: Roomlevel not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Roomlevel not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Internal server error
+ */
+
+router.get("/room/getroomnumber/:roomnumber_id", authMiddleware.isAdmin, roomController.getroomnumber);
+
+/**
+ * @swagger
+ * /admin/room/getroomtype/{roomtype_id}:
+ *   get:
+ *     tags:
+ *     - Admin - RoomGET
+ *     summary: Get roomtype by roomtype_id (authentication required)
+ *     description: Retrieve roomtype details by roomtype_id (authentication required).
+ *     security:
+ *       - Authorization: []
+ *     responses:
+ *       200:
+ *         description: Successful. Returns the roomtype details.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  roomtype_id:
+ *                    type: string
+ *                    example: 1
+ *       401:
+ *         description: No token provided/Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: No token provided/Invalid token
+ *       404:
+ *         description: Roomlevel not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Roomlevel not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Internal server error
+ */
+
+router.get("/room/getroomtype/:roomtype_id", authMiddleware.isAdmin, roomController.getroomtype);
+
+/**
+ * @swagger
+ * /admin/subject/updatesubject/{subject_id}:
+ *   patch:
+ *     tags:
+ *     - Admin - subject
+ *     summary: Edit subject information (authentication required).
+ *     description: Edit subject information.
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: subject_id
+ *         required: true
+ *         description: Subject ID to fetch
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               subject_id:
+ *                 type: string
+ *                 example: "123"
+ *               subject_name:
+ *                 type: string
+ *                 example: "Math"
+ *               subject_code:
+ *                 type: string
+ *                 example: "MATH101"
+ *               user_id:
+ *                 type: string
+ *                 example: "123"
+ *             required:
+ *               - subject_id
+ *               - subject_name
+ *               - subject_code
+ *               - user_id
+ *     responses:
+ *       200:
+ *         description: Subject data updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Subject data updated successfully
+ *       401:
+ *         description: No token provided/Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: No token provided/Invalid token
+ *       403:
+ *         description: You don't have permission to access this resource.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: You don't have permission to access this resource.
+ *       404:
+ *         description: Subject not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Subject not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Internal server error
+ */
+
+router.patch("/subject/updatesubject/:subject_id", authMiddleware.isAdmin, adminController.updateSubject);
+
+/**
+ * @swagger
+ * /admin/facility/addfacility:
+ *   post:
+ *     tags:
+ *     - Admin - facility
+ *     summary: Create a new facility (authentication required).
+ *     description: Create a new facility by providing facility information.
+ *     security:
+ *       - Authorization: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               facility_name:
+ *                 type: string
+ *                 example: "Math"
+ *               facility_id:
+ *                 type: string
+ *                 example: "ST212224236"
+ *             required:
+ *               - facility_id
+ *               - facility_name
+ *     responses:
+ *       201:
+ *         description: Facility addition successful.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Facility addition successful.
+ *       400:
+ *         description: Bad request (e.g., missing or invalid input data)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Bad request (e.g., missing or invalid input data)
+ *       401:
+ *         description: No token provided/Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: No token provided/Invalid token
+ *       403:
+ *         description: You don't have permission to access this resource.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: You don't have permission to access this resource.
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Internal server error
+ */
+
+
+router.post("/facility/addfacility", authMiddleware.isAdmin, adminController.addfacility);
+
+/**
+ * @swagger
+ * /admin/facility/getallfacility:
+ *   get:
+ *     tags:
+ *     - Admin - facility
+ *     summary: Get all facilities (authentication required)
+ *     description: Retrieve a list of all facilities (authentication required).
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *           minimum: 1
+ *           description: The page number to retrieve
+ *       - in: query
+ *         name: pageSize
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           minimum: 1
+ *           maximum: 100
+ *           description: Number of items per page
+ *     responses:
+ *       200:
+ *         description: Authenticate successful. Returns the list of facilities.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   facility_id:
+ *                     type: string
+ *                     example: 1
+ *                   facility_name:
+ *                     type: string
+ *                     example: "Computer"
+ *       401:
+ *         description: No token provided/Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: No token provided/Invalid token
+ *       403:
+ *         description: You don't have permission to access this resource.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: You don't have permission to access this resource.
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ */
+
+router.get("/facility/getallfacility", authMiddleware.isAdmin, adminController.getallfacility);
+
+/**
+ * @swagger
+ * /admin/facility/getfacilitybyid/{facility_id}:
+ *   get:
+ *     tags:
+ *     - Admin - facility
+ *     summary: Get facility by ID (authentication required)
+ *     description: Retrieve a facility by its ID (authentication required).
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: facility_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: "1"
+ *         description: The ID of the facility to retrieve
+ *     responses:
+ *       200:
+ *         description: Facility found. Returns the facility details.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 facility_id:
+ *                   type: string
+ *                   example: "1"
+ *                 facility_name:
+ *                   type: string
+ *                   example: "Computer"
+ *       404:
+ *         description: Facility not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Facility not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ */
+router.get("/facility/getFacilityById/:facility_id", authMiddleware.isAdmin, adminController.getFacilityById);
+
+/**
+ * @swagger
+ * /admin/facility/deletefacilitybyid/{facility_id}:
+ *   delete:
+ *     tags:
+ *     - Admin - facility
+ *     summary: Delete facility by ID (authentication required)
+ *     description: Delete a facility by its ID (authentication required).
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: facility_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: "1"
+ *         description: The ID of the facility to delete
+ *     responses:
+ *       200:
+ *         description: Facility deleted successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Facility deleted successfully
+ *       404:
+ *         description: Facility not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Facility not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ */
+
+router.delete("/facility/deleteFacilityById/:facility_id", authMiddleware.isAdmin, adminController.deleteFacilityById);
+
+/**
+ * @swagger
+ * /admin/facility/updatefacility/{facility_id}:
+ *   patch:
+ *     tags:
+ *     - Admin - facility
+ *     summary: Edit facility information (authentication required).
+ *     description: Edit facility information.
+ *     security:
+ *       - Authorization: []
+ *     parameters:
+ *       - in: path
+ *         name: facility_id
+ *         required: true
+ *         description: Facility ID to update
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               facility_id:
+ *                 type: string
+ *                 example: "1"
+ *               facility_name:
+ *                 type: string
+ *                 example: "Computer"
+ *             required:
+ *               - facility_id
+ *               - facility_name
+ *     responses:
+ *       200:
+ *         description: Facility data updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Facility data updated successfully
+ *       401:
+ *         description: No token provided/Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: No token provided/Invalid token
+ *       403:
+ *         description: You don't have permission to access this resource.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: You don't have permission to access this resource.
+ *       404:
+ *         description: Facility not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Facility not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Internal server error
+ */
+
+router.patch("/facility/updatefacility/:facility_id", authMiddleware.isAdmin, adminController.updateFacility);
+
+/**
+ * @swagger
+ * /admin/user/getteacherid:
+ *   get:
+ *     tags:
+ *     - Admin - RoomGET
+ *     summary: Get room number (authentication required)
+ *     description: Retrieve roomlevel details by roomlevel_id (authentication required).
+ *     security:
+ *       - Authorization: []
+ *     responses:
+ *       200:
+ *         description: Successful. Returns the roomlevel details.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  room_id:
+ *                    type: string
+ *                    example: 1
+ *                  room_number:
+ *                    type: string
+ *                    example: 9901
+ *       401:
+ *         description: No token provided/Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: No token provided/Invalid token
+ *       404:
+ *         description: Roomlevel not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Roomlevel not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Internal server error
+ */
+
+router.get("/user/getteacherid", authMiddleware.isAdmin, adminController.getteacherid);
+
+/**
+ * @swagger
+ * /admin/room/getroomnumber:
+ *   get:
+ *     tags:
+ *     - Admin - RoomGET
+ *     summary: Get room number (authentication required)
+ *     description: Retrieve roomlevel details by roomlevel_id (authentication required).
+ *     security:
+ *       - Authorization: []
+ *     responses:
+ *       200:
+ *         description: Successful. Returns the roomlevel details.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  room_id:
+ *                    type: string
+ *                    example: 1
+ *                  room_number:
+ *                    type: string
+ *                    example: 9901
+ *       401:
+ *         description: No token provided/Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: No token provided/Invalid token
+ *       404:
+ *         description: Roomlevel not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Roomlevel not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Internal server error
+ */
+
+router.get("/room/getroomnumber", authMiddleware.isAdmin, adminController.getroomnumber);
+
+/**
+ * @swagger
+ * /admin/subject/getsubjectslist:
+ *   get:
+ *     tags:
+ *     - Admin - subject
+ *     summary: Get subjects (authentication required)
+ *     description: Retrieve subjects details by subjects (authentication required).
+ *     security:
+ *       - Authorization: []
+ *     responses:
+ *       200:
+ *         description: Successful. Returns the Subjects details.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  subject_id:
+ *                    type: string
+ *                    example: 1
+ *                  subject_name:
+ *                    type: string
+ *                    example: HomeRoom
+ *       401:
+ *         description: No token provided/Invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: No token provided/Invalid token
+ *       404:
+ *         description: Subject not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Subject not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                    type: string
+ *                    example: Internal server error
+ */
+
+router.get("/subject/getsubjectslist", authMiddleware.isAdmin, adminController.getsubjectslist);
 module.exports = router;

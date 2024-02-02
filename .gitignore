@@ -1,1 +1,7 @@
+server/.env
+server/node_modules/
+client/node_modules/
+.vscode/settings.json
 node_modules
+# server/uploads/
+server/controller/sql
